@@ -1,0 +1,33 @@
+# dependencies
+/node_modules
+
+# IDE
+/.idea
+/.awcache
+/.vscode
+
+# misc
+npm-debug.log
+.DS_Store
+
+# tests
+/test
+/coverage
+/.nyc_output
+
+# source
+dist
+
+nestjs-azure-func-trigger.iml
+
+# schematics
+schematics/install/*.js
+schematics/install/*.d.ts
+schematics/install/express-engine/*.js
+schematics/install/express-engine/*.d.ts
+
+The package @nestjs/azure-func-http provides nice integration for Azure Function HTTP triggers.
+This is not possible for any other azure function trigger.
+
+I implemented a package similar to @nestjs/azure-func-http to be able to use any kind of azure function trigger.
+This also provides a decorator that can provide the azure function context into the method.
