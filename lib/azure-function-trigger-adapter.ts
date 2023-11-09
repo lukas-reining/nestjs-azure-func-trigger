@@ -4,20 +4,17 @@ import { TriggerContext } from './context';
 
 let handler: Function;
 
-export function createHandlerAdapter<T> (
-  app: INestApplication
-) {
+export function createHandlerAdapter<T>(app: INestApplication) {
   return async (context: TriggerContext<T>) => {
     await AzureFunctionExplorer.dispatchFunctionTrigger<T>(app, context);
   };
 }
 
 export class AzureFunctionTriggerAdapterStatic {
-  handle<
-    Service,
-    ServiceMethod extends keyof Service,
-    C
-  > (createApp: () => Promise<INestApplication>, context: TriggerContext<C>) {
+  handle<Service, ServiceMethod extends keyof Service, C>(
+    createApp: () => Promise<INestApplication>,
+    context: TriggerContext<C>
+  ) {
     if (handler) {
       return handler(context);
     }
@@ -26,11 +23,9 @@ export class AzureFunctionTriggerAdapterStatic {
     );
   }
 
-  private async createHandler<
-    Service,
-    ServiceMethod extends keyof Service,
-    C
-  > (createApp: () => Promise<INestApplication>) {
+  private async createHandler<Service, ServiceMethod extends keyof Service, C>(
+    createApp: () => Promise<INestApplication>
+  ) {
     const app = await createApp();
     handler = createHandlerAdapter(app);
     return handler;

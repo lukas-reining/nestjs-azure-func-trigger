@@ -39,10 +39,13 @@ export class PingService {
 
   @AzureFunctionTrigger('Ping')
   public ping(
-    test: string,
-    @AzureFunctionContext() context: InvocationContext
+    test1: string,
+    @AzureFunctionContext() context1: InvocationContext,
+    @AzureFunctionContext() context2: InvocationContext,
+    test2: string,
+    @AzureFunctionContext() context3: InvocationContext
   ) {
-    this.pingSpy(context);
+    this.pingSpy(test1, context1, context2, test2, context3);
     this.logger.log('ping');
   }
 

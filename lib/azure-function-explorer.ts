@@ -10,7 +10,7 @@ export class AzureFunctionExplorer {
   private static readonly logger = new Logger(AzureFunctionExplorer.name);
   private static readonly metadataScanner = new MetadataScanner();
 
-  private static servicesOf (app: NestContainer) {
+  private static servicesOf(app: NestContainer) {
     const modules = [...app.getModules().values()].map((module) => module);
 
     return modules.flatMap((module) => [
@@ -18,7 +18,7 @@ export class AzureFunctionExplorer {
     ]) as InstanceWrapper<object>[];
   }
 
-  public static servicesWithMethods (
+  public static servicesWithMethods(
     services: InstanceWrapper<object>[]
   ): ServiceWithMethod[] {
     return services.map(({ instance }) => {
@@ -37,7 +37,7 @@ export class AzureFunctionExplorer {
     });
   }
 
-  public static servicesWithTrigger (
+  public static servicesWithTrigger(
     servicesWithMethods: ServiceWithMethod[]
   ): ServiceWithMethod[] {
     return servicesWithMethods
@@ -50,7 +50,7 @@ export class AzureFunctionExplorer {
       .filter(([, methods]) => methods.length);
   }
 
-  public static servicesWithTriggerForFunction (
+  public static servicesWithTriggerForFunction(
     servicesWithMethods: ServiceWithMethod[],
     functionName: string
   ): ServiceWithMethod[] {
@@ -66,7 +66,7 @@ export class AzureFunctionExplorer {
       .filter(([, methods]) => methods.length);
   }
 
-  public static async callWithContext<T> (
+  public static async callWithContext<T>(
     [service, method]: [Object, string],
     context: TriggerContext<T>
   ) {
@@ -94,7 +94,7 @@ export class AzureFunctionExplorer {
     return await actualMethod.apply(service, args);
   }
 
-  public static async dispatchFunctionTrigger<T> (
+  public static async dispatchFunctionTrigger<T>(
     app: INestApplication,
     context: TriggerContext<T>
   ) {

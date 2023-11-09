@@ -54,7 +54,13 @@ describe('AzureFunctionTrigger', () => {
     );
 
     expect(pingSpy).toHaveBeenCalledTimes(1);
-    expect(pingSpy).toHaveBeenCalledWith(context);
+    expect(pingSpy).toHaveBeenCalledWith(
+      undefined,
+      context,
+      context,
+      undefined,
+      context
+    );
   });
 });
 
