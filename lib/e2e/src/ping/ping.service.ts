@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AzureFunctionTrigger } from '../../../decorators/azure-function-trigger';
+import {
+  AzureFunctionContext,
+  AzureFunctionTrigger
+} from '../../../decorators';
+import { InvocationContext } from '@azure/functionsV4';
 
 @Injectable()
 export class PingService {
@@ -34,8 +38,11 @@ export class PingService {
   }
 
   @AzureFunctionTrigger('Ping')
-  public ping() {
-    this.pingSpy();
+  public ping(
+    test: string,
+    @AzureFunctionContext() context: InvocationContext
+  ) {
+    this.pingSpy(context);
     this.logger.log('ping');
   }
 

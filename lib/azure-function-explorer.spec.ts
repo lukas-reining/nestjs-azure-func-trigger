@@ -1,10 +1,10 @@
 import 'reflect-metadata';
 
-import { AzureFunctionTrigger } from './decorators/azure-function-trigger';
+import { AzureFunctionTrigger } from './decorators';
 import { AzureFunctionExplorer } from './azure-function-explorer';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { AzureFunctionContext } from './decorators/azure-function-context';
-import { Context } from '@azure/functions';
+import { AzureFunctionContext } from './decorators';
+import { InvocationContext } from '@azure/functionsV4';
 
 class ClassWithoutTimers {
   public noTimer() {
@@ -30,7 +30,7 @@ class ClassWith2Timers extends ClassWithoutTimers {
   @AzureFunctionTrigger('Function')
   public timerWithContext(
     test: string,
-    @AzureFunctionContext() context: Context,
+    @AzureFunctionContext() context: InvocationContext
   ) {
     console.log('TimerWithContext');
   }
@@ -39,24 +39,24 @@ class ClassWith2Timers extends ClassWithoutTimers {
 describe('AzureFunctionExplorer', () => {
   const serviceWithoutTimer = {
     instance: new ClassWithoutTimers(),
-    metatype: ClassWithoutTimers,
+    metatype: ClassWithoutTimers
   } as InstanceWrapper<ClassWithoutTimers>;
 
   const serviceWithTimer = {
     instance: new ClassWith2Timers(),
-    metatype: ClassWith2Timers,
+    metatype: ClassWith2Timers
   } as InstanceWrapper<ClassWith2Timers>;
 
   describe('servicesWithMethods should', () => {
     it('return a list of all services', () => {
       expect(
-        AzureFunctionExplorer.servicesWithMethods([serviceWithTimer]),
+        AzureFunctionExplorer.servicesWithMethods([serviceWithTimer])
       ).toHaveLength(1);
     });
 
     it('return list of all method', () => {
       const servicesWithMethods = AzureFunctionExplorer.servicesWithMethods([
-        serviceWithTimer,
+        serviceWithTimer
       ]);
       const methods = servicesWithMethods[0][1];
       expect(methods).toHaveLength(5);
@@ -66,7 +66,7 @@ describe('AzureFunctionExplorer', () => {
   describe('servicesWithTriggerMethods should', () => {
     it('return an empty list if there are no triggers', () => {
       const servicesWithMethods = AzureFunctionExplorer.servicesWithMethods([
-        serviceWithoutTimer,
+        serviceWithoutTimer
       ]);
 
       const servicesWithTriggerMethods =
@@ -77,7 +77,7 @@ describe('AzureFunctionExplorer', () => {
 
     it('return list of all methods with triggers', () => {
       const servicesWithMethods = AzureFunctionExplorer.servicesWithMethods([
-        serviceWithTimer,
+        serviceWithTimer
       ]);
 
       const servicesWithTriggerMethods =
@@ -91,13 +91,13 @@ describe('AzureFunctionExplorer', () => {
   describe('servicesWithTriggerForFunction should', () => {
     it('return an empty list if there is no trigger for the function', () => {
       const servicesWithMethods = AzureFunctionExplorer.servicesWithMethods([
-        serviceWithoutTimer,
+        serviceWithoutTimer
       ]);
 
       const servicesWithTriggerMethods =
         AzureFunctionExplorer.servicesWithTriggerForFunction(
           servicesWithMethods,
-          'noTimer',
+          'noTimer'
         );
 
       expect(servicesWithTriggerMethods).toHaveLength(0);
@@ -105,13 +105,13 @@ describe('AzureFunctionExplorer', () => {
 
     it('return list of all methods with triggers for the function', () => {
       const servicesWithMethods = AzureFunctionExplorer.servicesWithMethods([
-        serviceWithTimer,
+        serviceWithTimer
       ]);
 
       const servicesWithTriggerMethods =
         AzureFunctionExplorer.servicesWithTriggerForFunction(
           servicesWithMethods,
-          'Function',
+          'Function'
         );
 
       const methods = servicesWithTriggerMethods[0][1];
@@ -123,7 +123,7 @@ describe('AzureFunctionExplorer', () => {
     it('should call function with empty params if no context is injected', () => {
       const service = serviceWithTimer.instance;
 
-      const context = {} as Context;
+      const context = new InvocationContext();
       const spy = jest.spyOn(service, 'timer2');
 
       AzureFunctionExplorer.callWithContext([service, 'timer2'], context);
@@ -134,15 +134,15 @@ describe('AzureFunctionExplorer', () => {
     it('should call function with context injected if annotated', () => {
       const service = serviceWithTimer.instance;
 
-      const context = { invocationId: 'abc' } as Context;
+      const context = new InvocationContext({ invocationId: 'abc' });
       const spy = jest.spyOn(service, 'timerWithContext');
 
       AzureFunctionExplorer.callWithContext(
         [service, 'timerWithContext'],
-        context,
+        context
       );
 
-      expect(spy).toHaveBeenCalledWith(context);
+      expect(spy).toHaveBeenCalledWith(undefined, context);
     });
   });
 });

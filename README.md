@@ -4,8 +4,6 @@
 
 [travis-image]: https://api.travis-ci.org/nestjs/nest.svg?branch=master
 
-[travis-url]: https://travis-ci.org/nestjs/nest
-
 [linux-image]: https://img.shields.io/travis/nestjs/nest/master.svg?label=linux
 
 [linux-url]: https://travis-ci.org/nestjs/nest
@@ -53,11 +51,11 @@ Adding a trigger is done by creating a new Azure Function in the app folder and 
 AzureFunctionTriggerAdapter.
 
 ```typescript
-import { Context } from '@azure/functions';
+import { InvocationContext } from '@azure/functions';
 import { AzureFunctionTriggerAdapter } from 'nestjs-azure-func-trigger';
 import { createApp } from '../src/main';
 
-export default async function(context: Context): Promise<void> {
+export default async function(context: InvocationContext): Promise<void> {
   return AzureFunctionTriggerAdapter.handle(createApp, context);
 }
 ```
@@ -72,10 +70,9 @@ import { Injectable } from '@nestjs/common';
 class ClassWithTrigger {
   @AzureFunctionTrigger('FunctionName')
   public timerWithContext (
-    test: string,
-    @AzureFunctionContext() context: Context,
+    @AzureFunctionContext() context: InvocationContext,
   ) {
-    context.log('TimerWithContext');
+    context.log('TimerWithContext', context);
   }
 }
 ```

@@ -1,11 +1,8 @@
 import { INestApplication, Logger } from '@nestjs/common';
 import { MetadataScanner, NestContainer } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import {
-  CONTEXT_DECORATOR_KEY,
-  TRIGGER_DECORATOR_KEY,
-} from './decorators/prefix';
-import { Context } from '@azure/functions';
+import { CONTEXT_DECORATOR_KEY, TRIGGER_DECORATOR_KEY } from './decorators';
+import { TriggerContext } from './context';
 
 type ServiceWithMethod<T = object> = [object: T, methods: string[]];
 
@@ -13,16 +10,16 @@ export class AzureFunctionExplorer {
   private static readonly logger = new Logger(AzureFunctionExplorer.name);
   private static readonly metadataScanner = new MetadataScanner();
 
-  private static servicesOf(app: NestContainer) {
+  private static servicesOf (app: NestContainer) {
     const modules = [...app.getModules().values()].map((module) => module);
 
     return modules.flatMap((module) => [
-      ...module.providers.values(),
+      ...module.providers.values()
     ]) as InstanceWrapper<object>[];
   }
 
-  public static servicesWithMethods(
-    services: InstanceWrapper<object>[],
+  public static servicesWithMethods (
+    services: InstanceWrapper<object>[]
   ): ServiceWithMethod[] {
     return services.map(({ instance }) => {
       if (!instance) {
@@ -33,29 +30,29 @@ export class AzureFunctionExplorer {
 
       const methods =
         AzureFunctionExplorer.metadataScanner.getAllFilteredMethodNames(
-          prototype,
+          prototype
         );
 
       return [instance, [...methods]];
     });
   }
 
-  public static servicesWithTrigger(
-    servicesWithMethods: ServiceWithMethod[],
+  public static servicesWithTrigger (
+    servicesWithMethods: ServiceWithMethod[]
   ): ServiceWithMethod[] {
     return servicesWithMethods
       .map<ServiceWithMethod>(([instance, methods]) => [
         instance,
         methods.filter((method) => {
           return Reflect.hasMetadata(TRIGGER_DECORATOR_KEY, instance[method]);
-        }),
+        })
       ])
       .filter(([, methods]) => methods.length);
   }
 
-  public static servicesWithTriggerForFunction(
+  public static servicesWithTriggerForFunction (
     servicesWithMethods: ServiceWithMethod[],
-    functionName: string,
+    functionName: string
   ): ServiceWithMethod[] {
     return servicesWithMethods
       .map<ServiceWithMethod>(([instance, methods]) => [
@@ -63,20 +60,20 @@ export class AzureFunctionExplorer {
         methods.filter(
           (method) =>
             Reflect.getMetadata(TRIGGER_DECORATOR_KEY, instance[method]) ===
-            functionName,
-        ),
+            functionName
+        )
       ])
       .filter(([, methods]) => methods.length);
   }
 
-  public static async callWithContext(
+  public static async callWithContext<T> (
     [service, method]: [Object, string],
-    context: Context,
+    context: TriggerContext<T>
   ) {
-    const injections = Reflect.getMetadata(
+    const injections: Record<string, boolean> | undefined = Reflect.getMetadata(
       CONTEXT_DECORATOR_KEY,
       service,
-      method,
+      method
     );
 
     const actualMethod = service[method];
@@ -85,23 +82,21 @@ export class AzureFunctionExplorer {
       return await actualMethod.apply(service, []);
     }
 
-    const injectionMappings = Object.entries(injections);
-
-    const args = injectionMappings.reduce(
-      (newArgs, [_, shouldInjectContext]) => {
-        return shouldInjectContext
-          ? [...newArgs, context]
-          : [...newArgs, undefined];
-      },
-      [],
+    const contextParameters = Object.keys(injections).map((index) =>
+      parseInt(index, 10)
     );
+    const args = new Array(Math.max(...contextParameters) + 1)
+      .fill(undefined)
+      .map((_, index) =>
+        contextParameters.includes(index) ? context : undefined
+      );
 
     return await actualMethod.apply(service, args);
   }
 
-  public static async dispatchFunctionTrigger(
+  public static async dispatchFunctionTrigger<T> (
     app: INestApplication,
-    context: Context,
+    context: TriggerContext<T>
   ) {
     // As done in nestjs/swagger https://github.com/nestjs/swagger/blob/548e1bf1d1804241ef1a89fca09b75543a52af04/lib/swagger-scanner.ts#L41
     const container = (app as any).container as NestContainer;
@@ -111,13 +106,15 @@ export class AzureFunctionExplorer {
 
     const servicesWithTimedTriggerMethods = this.servicesWithTriggerForFunction(
       servicesWithMethods,
-      context.executionContext.functionName,
+      'executionContext' in context
+        ? context.executionContext.functionName
+        : context.functionName
     );
 
     const methodCalls = servicesWithTimedTriggerMethods.flatMap(
       ([service, methods]) => {
         return methods.map<[object, string]>((method) => [service, method]);
-      },
+      }
     );
 
     await Promise.all(
@@ -126,7 +123,7 @@ export class AzureFunctionExplorer {
         context.log(`Triggering ${service.constructor.name}.${method}`);
 
         await this.callWithContext([service, method], context);
-      }),
+      })
     );
   }
 }
